@@ -22,7 +22,7 @@ A REST API for tracking personal expenses, built with **FastAPI**, **SQLAlchemy*
 ## Getting started
 
 ```bash
-git clone https://github.com/<tatianabartel>/ExpenseTracker.git
+git clone https://github.com/tatianabartel/ExpenseTracker
 cd ExpenseTracker
 
 python -m venv .venv
