@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from datetime import date
 from sqlalchemy.orm import Session
 
@@ -30,7 +30,9 @@ def create_expense(expense: ExpenseCreate,
 def get_expenses(db: Session = Depends(get_db), 
                  category: str | None = None, 
                  start_date: date | None = None, 
-                 end_date: date | None = None):
+                 end_date: date | None = None,
+                 limit: int = Query(20, ge=1, le=100),
+                 offset: int = Query(0, ge=0)):
     query = db.query(Expense)
     if category:
         query = query.filter(Expense.category == category)
@@ -38,7 +40,7 @@ def get_expenses(db: Session = Depends(get_db),
         query = query.filter(Expense.date >= start_date)
     if end_date:
         query = query.filter(Expense.date <= end_date)
-    expenses = query.all()
+    expenses = query.order_by(Expense.id).offset(offset).limit(limit)
     return expenses
 
 
