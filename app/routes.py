@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from datetime import date
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.schemas import ExpenseCreate, ExpenseResponse, ExpenseUpdate
@@ -30,7 +31,9 @@ def create_expense(expense: ExpenseCreate,
 def get_expenses(db: Session = Depends(get_db), 
                  category: str | None = None, 
                  start_date: date | None = None, 
-                 end_date: date | None = None):
+                 end_date: date | None = None,
+                 limit: int = Query(20, ge=1, le=100),
+                 offset: int = Query(0, ge=0)):
     query = db.query(Expense)
     if category:
         query = query.filter(Expense.category == category)
@@ -38,7 +41,7 @@ def get_expenses(db: Session = Depends(get_db),
         query = query.filter(Expense.date >= start_date)
     if end_date:
         query = query.filter(Expense.date <= end_date)
-    expenses = query.all()
+    expenses = query.order_by(Expense.id).offset(offset).limit(limit)
     return expenses
 
 
@@ -46,17 +49,16 @@ def get_expenses(db: Session = Depends(get_db),
 def get_expense_summary(db: Session = Depends(get_db), 
                         start_date: date | None = None, 
                         end_date: date | None = None):
-    query = db.query(Expense)
+    query = db.query(func.coalesce(func.sum(Expense.amount), 0), func.count())
     if start_date:
         query = query.filter(Expense.date >= start_date)
     if end_date:
         query = query.filter(Expense.date <= end_date)
 
-    expenses = query.all()
-    total_amount = sum(expense.amount for expense in expenses)
-    return {"total_amount": total_amount, 
-            "count": len(expenses), 
-            "average_amount": round(total_amount / len(expenses) if expenses else 0, 2)}
+    total, count = query.one()
+    return {"total_amount": total, 
+            "count": count, 
+            "average_amount": round(total / count if count else 0, 2)}
 
 
 @router.get("/expenses/{expense_id}", response_model=ExpenseResponse)

@@ -247,3 +247,41 @@ def test_create_expense_too_many_decimals(client: TestClient):
     })
 
     assert response.status_code == 422
+
+def test_get_expenses_limit(client: TestClient):
+    for i, category in enumerate(["Food", "Transport", "Other", "Helath", "Food"]):
+            client.post("/expenses", json={
+                "amount": i + 1,
+                "category": category,
+                "description": "something",
+                "date": "2023-10-01"
+            })
+    
+    response = client.get("/expenses?limit=2")
+    data = response.json()
+
+    assert response.status_code == 200
+    assert len(data) == 2
+    assert [e["amount"] for e in data] == [1.0, 2.0]
+
+def test_get_expenses_limit_with_offset(client: TestClient):
+    for i, category in enumerate(["Food", "Transport", "Other", "Helath", "Food"]):
+            client.post("/expenses", json={
+                "amount": i + 1,
+                "category": category,
+                "description": "something",
+                "date": "2023-10-01"
+            })
+    
+    response = client.get("/expenses?limit=2&offset=2")
+    data = response.json()
+
+    assert response.status_code == 200
+    assert len(data) == 2
+    assert [e["amount"] for e in data] == [3.0, 4.0]
+
+
+def test_get_expenses_limit_greater_than_100(client: TestClient):
+    response = client.get("/expenses?limit=101")
+
+    assert response.status_code == 422
