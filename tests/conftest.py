@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-import pytest
+import pytest, os
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "sqlite:///:memory:")
 
@@ -18,7 +18,7 @@ if TEST_DATABASE_URL.startswith("sqlite"):
     )
 else:
     test_engine = create_engine(TEST_DATABASE_URL)
-    
+
 
 TestingSessionLocal = sessionmaker(
     autocommit=False,
