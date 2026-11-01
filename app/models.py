@@ -1,8 +1,9 @@
-from sqlalchemy import Column, Integer, String, Numeric, Date
+from sqlalchemy import Column, Integer, String, Numeric, Date, Index
 from app.database import Base
 
 class Expense(Base):
     __tablename__ = 'expenses'
+    __table_args__ = (Index("ix_expenses_category_date", "category", "date"),)
 
     id = Column(Integer, primary_key=True)
     amount = Column(Numeric(10, 2), nullable=False)
