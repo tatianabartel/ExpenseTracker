@@ -1,0 +1,10 @@
+.venv/
+.venv-wsl/
+.git/
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+*.db
+docs/
+scripts/
+tests/
