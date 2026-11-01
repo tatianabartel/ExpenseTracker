@@ -36,7 +36,11 @@ def get_expenses(
     end_date: date | None = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
+    after_id: int | None = Query(None, ge=1)
 ):
+    if after_id is not None and skip > 0:
+        raise HTTPException(status_code=422, detail="Cannot use 'after_id' with 'skip'")
+
     query = db.query(Expense)
     if category:
         query = query.filter(Expense.category == category)
@@ -44,7 +48,11 @@ def get_expenses(
         query = query.filter(Expense.date >= start_date)
     if end_date:
         query = query.filter(Expense.date <= end_date)
-    return query.order_by(Expense.id).offset(skip).limit(limit).all()
+    if after_id is not None:
+        query = query.filter(Expense.id > after_id)
+    else:
+        query = query.offset(skip)
+    return query.order_by(Expense.id).limit(limit).all()
 
 
 @router.get("/expenses/summary")
