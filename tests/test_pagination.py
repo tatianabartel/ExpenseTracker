@@ -78,9 +78,48 @@ def test_limit_100_is_allowed(client, category):
         {"limit": 101},
         {"limit": 1000000},
         {"skip": -1},
+        {"after_id": 0},
+        {"after_id": -5},
     ],
 )
 def test_invalid_pagination_params_return_422(client, params):
     response = client.get("/expenses", params=params)
+
+    assert response.status_code == 422
+
+
+def test_after_id_pages_through_everything_once(client, category):
+    created = create_expenses(client, 7, category)
+
+    seen = []
+    after_id = None
+    while True:
+        params = {"category": category, "limit": 3}
+        if after_id is not None:
+            params["after_id"] = after_id
+        page = client.get("/expenses", params=params).json()
+        if not page:
+            break
+        seen.extend(e["id"] for e in page)
+        after_id = page[-1]["id"]
+
+    assert seen == sorted(created)
+
+
+def test_after_id_returns_only_newer_ids(client, category):
+    created = create_expenses(client, 5, category)
+
+    response = client.get(
+        "/expenses", params={"category": category, "after_id": created[1], "limit": 10}
+    )
+
+    assert response.status_code == 200
+    assert [e["id"] for e in response.json()] == created[2:]
+
+
+def test_after_id_with_skip_returns_422(client, category):
+    response = client.get(
+        "/expenses", params={"category": category, "after_id": 1, "skip": 5}
+    )
 
     assert response.status_code == 422
