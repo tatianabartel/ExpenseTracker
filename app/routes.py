@@ -48,7 +48,7 @@ def get_expenses(
         query = query.filter(Expense.date >= start_date)
     if end_date:
         query = query.filter(Expense.date <= end_date)
-        query = query.order_by(Expense.id)
+    query = query.order_by(Expense.id)
 
     if after_id is not None:
         query = query.filter(Expense.id > after_id)
