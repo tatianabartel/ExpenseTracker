@@ -65,6 +65,17 @@ The API is available at http://127.0.0.1:8000.
 The manifests in `k8s/` create a PostgreSQL Deployment with a PersistentVolumeClaim and a Secret,
 a Job that runs `alembic upgrade head`, and an API Deployment with 2 replicas.
 
+Build the image and load it into the kind cluster (the manifests use `imagePullPolicy: Never`,
+so Kubernetes never tries to pull it from a registry):
+
+```bash
+podman build -t expensetracker:dev .
+podman save localhost/expensetracker:dev -o expensetracker.tar
+kind load image-archive expensetracker.tar
+```
+
+Then apply the manifests:
+
 ```bash
 kubectl apply -f k8s/postgres.yaml
 kubectl apply -f k8s/migrate-job.yaml
@@ -73,8 +84,7 @@ kubectl apply -f k8s/api.yaml
 kubectl port-forward svc/api 8000:80
 ```
 
-The API image must already be loaded into the cluster as `localhost/expensetracker:dev`
-(`imagePullPolicy: Never`). The Secret holds local development credentials only.
+The Secret holds local development credentials only.
 
 ## API endpoints
 
@@ -138,13 +148,6 @@ To run them against PostgreSQL, set `TEST_DATABASE_URL`.
 CI (GitHub Actions) runs on every push and pull request against a PostgreSQL 16 service:
 it applies the migrations, checks they are reversible (`downgrade base` + `upgrade head`), then runs pytest.
 
-## Performance
-
-Measured locally on PostgreSQL 16 with 1,000,000 seeded rows (`scripts/`):
-
-- the composite index on `(category, date)` reduced a filtered query from about 70 ms to 8.7 ms
-- deep pages through the API: offset pagination took about 636 ms, keyset pagination about 12 ms
-
 ## Known limitations
 
 - No authentication
@@ -163,7 +166,7 @@ ExpenseTracker/
 │   └── database.py      # engine, sessions, DATABASE_URL
 ├── migrations/          # Alembic environment and migrations
 ├── tests/               # pytest (expenses, pagination, health)
-├── scripts/             # SQL to seed 1M rows and benchmark indexes/pagination
+├── scripts/             # SQL to seed 1M rows and compare indexes/pagination with EXPLAIN ANALYZE
 ├── k8s/                 # Kubernetes manifests
 ├── .github/workflows/   # CI
 ├── Containerfile        # multi-stage image, non-root user
