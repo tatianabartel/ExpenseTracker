@@ -123,3 +123,18 @@ def test_after_id_with_skip_returns_422(client, category):
     )
 
     assert response.status_code == 422
+
+
+def test_results_are_ordered_by_id_even_when_dates_are_reversed(client, category):
+    # Newer ids get older dates, so ordering by date would reverse them
+    ids = []
+    for day in ["2026-11-03", "2026-11-02", "2026-11-01"]:
+        response = client.post(
+            "/expenses",
+            json={"amount": 10, "category": category, "date": day, "description": "item"},
+        )
+        ids.append(response.json()["id"])
+
+    response = client.get("/expenses", params={"category": category})
+
+    assert [e["id"] for e in response.json()] == ids
