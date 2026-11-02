@@ -143,6 +143,7 @@ pytest -v
 ```
 
 By default the tests use an in-memory SQLite database, so your local data is never touched.
+The test schema is built by running the Alembic migrations, the same way as in production.
 To run them against PostgreSQL, set `TEST_DATABASE_URL`.
 
 CI (GitHub Actions) runs on every push and pull request against a PostgreSQL 16 service:
@@ -165,8 +166,7 @@ ExpenseTracker/
 │   ├── schemas.py       # Pydantic schemas and validation
 │   └── database.py      # engine, sessions, DATABASE_URL
 ├── migrations/          # Alembic environment and migrations
-├── tests/               # pytest (expenses, pagination, health)
-├── scripts/             # SQL to seed 1M rows and compare indexes/pagination with EXPLAIN ANALYZE
+├── tests/               # pytest (expenses, pagination, health, schema)
 ├── k8s/                 # Kubernetes manifests
 ├── .github/workflows/   # CI
 ├── Containerfile        # multi-stage image, non-root user
