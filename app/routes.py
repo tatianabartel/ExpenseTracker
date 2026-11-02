@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from datetime import date
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.schemas import ExpenseCreate, ExpenseResponse, ExpenseUpdate
@@ -25,8 +26,6 @@ def create_expense(expense: ExpenseCreate,
 
     return new_expense
 
-
-from fastapi import Query
 
 @router.get("/expenses", response_model=list[ExpenseResponse])
 def get_expenses(
@@ -62,17 +61,19 @@ def get_expenses(
 def get_expense_summary(db: Session = Depends(get_db), 
                         start_date: date | None = None, 
                         end_date: date | None = None):
-    query = db.query(Expense)
+    query = db.query(
+        func.coalesce(func.sum(Expense.amount), 0),
+        func.count(Expense.id),
+    )
     if start_date:
         query = query.filter(Expense.date >= start_date)
     if end_date:
         query = query.filter(Expense.date <= end_date)
 
-    expenses = query.all()
-    total_amount = sum(expense.amount for expense in expenses)
-    return {"total_amount": total_amount, 
-            "count": len(expenses), 
-            "average_amount": round(total_amount / len(expenses) if expenses else 0, 2)}
+    total_amount, count = query.one()
+    return {"total_amount": total_amount,
+            "count": count,
+            "average_amount": round(total_amount / count, 2) if count else 0}
 
 
 @router.get("/expenses/{expense_id}", response_model=ExpenseResponse)
@@ -114,4 +115,3 @@ def delete_expense(expense_id: int,
     db.commit()
 
     return expense
-
